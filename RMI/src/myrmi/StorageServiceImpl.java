@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 
 public class StorageServiceImpl extends UnicastRemoteObject implements StorageService {
  private String storageDirectory;
- private String serverId; // A unique ID for this storage server instance
+ private String serverId; 
 
  public StorageServiceImpl(String serverId, String storageDirectory) throws RemoteException {
      super();
@@ -50,7 +50,6 @@ public class StorageServiceImpl extends UnicastRemoteObject implements StorageSe
          return data;
      } catch (IOException e) {
          System.err.println(serverId + ": Error downloading chunk " + chunkId + ": " + e.getMessage());
-         // It's good practice to throw RemoteException for remote failures
          throw new RemoteException("Failed to download chunk " + chunkId, e);
      }
  }

@@ -14,21 +14,18 @@ public class StorageServerMain {
 
         String serverName = args[0];
         String dataDirectory = args[1];
-        String metadataHost = "localhost"; 
+        String metadataHost = "172.16.3.44"; 
         int metadataPort = 1099;
 
         try {
-            // Ensure data directory exists
             File dir = new File(dataDirectory);
             if (!dir.exists()) {
                 dir.mkdirs();
                 System.out.println("Created data directory: " + dataDirectory);
             }
-
-            // Bind StorageService
-            // FIX: Pass both serverName and dataDirectory to the constructor
+            
             StorageService storageService = new StorageServiceImpl(serverName, dataDirectory); 
-            Registry registry = LocateRegistry.getRegistry(); // Get default registry on 1099
+            Registry registry = LocateRegistry.getRegistry(); 
             registry.rebind(serverName, storageService);
             System.out.println("Storage Server " + serverName + " is Ready!");
 
@@ -36,21 +33,21 @@ public class StorageServerMain {
             MetadataService metadataService = (MetadataService) Naming.lookup("rmi://" + metadataHost + ":" + metadataPort + "/MetadataService");
             
             // Register with Metadata Service
-            metadataService.registerStorageServer(serverName, "localhost", metadataPort); // This line was fine
+            metadataService.registerStorageServer(serverName, "172.16.3.44", metadataPort); 
             
-            // --- NEW: Scan and Register existing chunks ---
+          
             System.out.println("Scanning data directory '" + dataDirectory + "' for existing chunks...");
             File[] chunkFiles = dir.listFiles();
             if (chunkFiles != null) {
                 for (File chunkFile : chunkFiles) {
-                    if (chunkFile.isFile()) { // Ensure it's a file, not a subdirectory
+                    if (chunkFile.isFile()) { 
                         String chunkName = chunkFile.getName();
                         metadataService.registerChunk(chunkName, serverName);
                     }
                 }
             }
             System.out.println("Finished scanning and registering existing chunks for " + serverName + ".");
-            // --- END NEW ---
+          
 
         } catch (Exception e) {
             System.err.println("Storage Server exception (" + serverName + "): " + e.toString());

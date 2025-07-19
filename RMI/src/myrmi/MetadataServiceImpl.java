@@ -11,12 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MetadataServiceImpl extends UnicastRemoteObject implements MetadataService {
 
-    private Map<String, List<String>> fileToChunksMap; // Maps filename to a list of its chunk names
-    private Map<String, List<String>> chunkLocations; // Maps chunk name to the list of storage servers that hold it
-    private Map<String, String> storageServers; // Maps storage server name to its RMI URL (host:port)
+    private Map<String, List<String>> fileToChunksMap; 
+    private Map<String, List<String>> chunkLocations; 
+    private Map<String, String> storageServers; 
 
-    private AtomicInteger serverCounter = new AtomicInteger(0); // For round-robin assignment
-    private String METADATA_FILE = "metadata.dat"; // File for persistence
+    private AtomicInteger serverCounter = new AtomicInteger(0); 
+    private String METADATA_FILE = "metadata.dat"; 
 
     public MetadataServiceImpl() throws RemoteException {
         super();
@@ -41,12 +41,11 @@ public class MetadataServiceImpl extends UnicastRemoteObject implements Metadata
             try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(Paths.get(METADATA_FILE)))) {
                 fileToChunksMap = (Map<String, List<String>>) ois.readObject();
                 System.out.println("Metadata loaded from " + METADATA_FILE);
-                // After loading, we need to rebuild chunkLocations based on what storage servers report.
-                // This map will be populated by StorageServers calling registerChunk upon their startup.
-                chunkLocations.clear(); // Clear old locations as they'll be rebuilt
+               
+                chunkLocations.clear(); 
             } catch (IOException | ClassNotFoundException e) {
                 System.err.println("Error loading metadata: " + e.getMessage());
-                // If loading fails (e.g., file corrupted), start with an empty map
+                
                 fileToChunksMap = new ConcurrentHashMap<>();
             }
         } else {
@@ -67,10 +66,7 @@ public class MetadataServiceImpl extends UnicastRemoteObject implements Metadata
             throw new RemoteException("No storage servers available.");
         }
         List<String> serverNames = new ArrayList<>(storageServers.keySet());
-        // Handle cases where some servers might have crashed and not yet re-registered
-        // (Though in this basic model, we assume they eventually re-register)
-        
-        // Ensure round-robin index doesn't go out of bounds if servers change
+       
         int currentSize = serverNames.size();
         int index = serverCounter.getAndIncrement() % currentSize;
         return serverNames.get(index);
@@ -99,8 +95,6 @@ public class MetadataServiceImpl extends UnicastRemoteObject implements Metadata
                 chunksWithLocations.put(chunk, new ArrayList<>(locations)); // Return a copy
             } else {
                 System.err.println("Warning: Chunk " + chunk + " has no known locations on any active server.");
-                // In a production system, this would indicate data loss or a server being down.
-                // You might want to remove the file from fileToChunksMap or mark it corrupted.
             }
         }
         return chunksWithLocations;
@@ -111,18 +105,15 @@ public class MetadataServiceImpl extends UnicastRemoteObject implements Metadata
         return new ArrayList<>(fileToChunksMap.keySet());
     }
 
-    @Override
-    public String getStorageServer(String fileName, long offset) throws RemoteException {
-        // This method is generally not used for actual chunk retrieval in a block-based DFS like this.
-        // `getFileChunks` is the primary way to get locations for download.
-        // For consistency, if needed, return a random server from registered ones.
-        if (storageServers.isEmpty()) {
-            return null;
-        }
-        List<String> serverNames = new ArrayList<>(storageServers.keySet());
-        Collections.shuffle(serverNames);
-        return serverNames.get(0);
-    }
+//    @Override
+//    public String getStorageServer(String fileName, long offset) throws RemoteException {
+//        if (storageServers.isEmpty()) {
+//            return null;
+//        }
+//        List<String> serverNames = new ArrayList<>(storageServers.keySet());
+//        Collections.shuffle(serverNames);
+//        return serverNames.get(0);
+//    }
 
     @Override
     public String getStorageServerForChunk(String chunkName) throws RemoteException {
@@ -130,24 +121,18 @@ public class MetadataServiceImpl extends UnicastRemoteObject implements Metadata
         if (servers == null || servers.isEmpty()) {
             return null;
         }
-        // Simple strategy: return the first server.
-        // Advanced: select based on load, network latency, etc.
         return servers.get(0);
     }
 
     @Override
     public void chunkStored(String chunkName, String storageServerName) throws RemoteException {
-        // This is called when a new chunk is uploaded/replicated.
-        // Ensure no duplicate entries for the same chunk on the same server.
         chunkLocations.computeIfAbsent(chunkName, k -> new Vector<>()).add(storageServerName);
         System.out.println("Chunk " + chunkName + " acknowledged on " + storageServerName);
     }
 
     @Override
     public void registerChunk(String chunkName, String storageServerName) throws RemoteException {
-        // Called by Storage Servers on startup to report their existing chunks.
-        // Use a Set or check for contains to prevent duplicates if server re-registers without full restart
-        List<String> locations = chunkLocations.computeIfAbsent(chunkName, k -> new Vector<>()); // Using Vector for thread-safety if needed, or just ArrayList
+        List<String> locations = chunkLocations.computeIfAbsent(chunkName, k -> new Vector<>()); 
         if (!locations.contains(storageServerName)) {
             locations.add(storageServerName);
         }

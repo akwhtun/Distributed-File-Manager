@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface MetadataService extends Remote {
-    String getStorageServer(String fileName, long offset) throws RemoteException;
+//    String getStorageServer(String fileName, long offset) throws RemoteException;
     String getStorageServerForChunk(String chunkName) throws RemoteException;
     List<String> listAvailableFiles() throws RemoteException;
     void registerStorageServer(String name, String host, int port) throws RemoteException;

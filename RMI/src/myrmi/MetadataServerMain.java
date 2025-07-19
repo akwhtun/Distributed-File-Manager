@@ -6,14 +6,9 @@ import java.rmi.registry.Registry;
 public class MetadataServerMain {
  public static void main(String[] args) {
      try {
-         // Create and export the remote object
          MetadataServiceImpl metadataService = new MetadataServiceImpl();
-         
-         // Get RMI registry (create if not exists)
-         // Default port is 1099
          Registry registry = LocateRegistry.createRegistry(1099); 
-         
-         // Bind the remote object to a name in the registry
+  
          registry.rebind("MetadataService", metadataService);
          
          System.out.println("Metadata Server Ready!");

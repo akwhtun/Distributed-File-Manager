@@ -325,7 +325,7 @@ public class ClientUI extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            ClientUI frame = new ClientUI("localhost", 1099);
+            ClientUI frame = new ClientUI("172.16.3.44", 1099);
             frame.setVisible(true);
         });
     }
