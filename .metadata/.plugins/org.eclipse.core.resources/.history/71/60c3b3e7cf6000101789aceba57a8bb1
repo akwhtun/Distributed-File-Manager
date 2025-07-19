@@ -1,0 +1,23 @@
+// MetadataService.java
+package myrmi;
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.util.List;
+import java.util.Map;
+
+public interface MetadataService extends Remote {
+    // Existing methods
+    String getStorageServer(String fileName, long offset) throws RemoteException;
+    String getStorageServerForChunk(String chunkName) throws RemoteException; // Added in previous iteration
+    List<String> listAvailableFiles() throws RemoteException;
+    void registerStorageServer(String name, String host, int port) throws RemoteException;
+    void fileUploaded(String fileName, long fileSize, List<String> chunkNames) throws RemoteException; // Modified to accept chunk names
+    String getNextChunkServer() throws RemoteException;
+    Map<String, List<String>> getFileChunks(String fileName) throws RemoteException; // Modified return type
+    void chunkStored(String chunkName, String storageServerName) throws RemoteException; // Notify metadata server a chunk is stored
+    
+    // --- NEW: For Persistence ---
+    void registerChunk(String chunkName, String storageServerName) throws RemoteException; // Storage servers call this on startup
+    // --- END NEW ---
+}

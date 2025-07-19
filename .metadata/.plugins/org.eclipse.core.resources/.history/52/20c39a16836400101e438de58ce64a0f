@@ -1,0 +1,57 @@
+//StorageServiceImpl.java
+package myrmi2;
+import java.io.*;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class StorageServiceImpl extends UnicastRemoteObject implements StorageService {
+ private String storageDirectory;
+ private String serverId; // A unique ID for this storage server instance
+
+ public StorageServiceImpl(String serverId, String storageDirectory) throws RemoteException {
+     super();
+     this.serverId = serverId;
+     this.storageDirectory = storageDirectory;
+     // Ensure the storage directory exists
+     Path path = Paths.get(storageDirectory);
+     if (!Files.exists(path)) {
+         try {
+             Files.createDirectories(path);
+             System.out.println("Created storage directory: " + storageDirectory);
+         } catch (IOException e) {
+             System.err.println("Error creating storage directory: " + e.getMessage());
+             throw new RemoteException("Failed to initialize storage directory", e);
+         }
+     }
+     System.out.println(serverId + " initialized, storing chunks in: " + storageDirectory);
+ }
+
+ @Override
+ public void uploadChunk(String chunkId, byte[] chunkData) throws RemoteException {
+     Path filePath = Paths.get(storageDirectory, chunkId);
+     try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+         fos.write(chunkData);
+         System.out.println(serverId + ": Uploaded chunk " + chunkId + " (" + chunkData.length + " bytes)");
+     } catch (IOException e) {
+         System.err.println(serverId + ": Error uploading chunk " + chunkId + ": " + e.getMessage());
+         throw new RemoteException("Failed to upload chunk", e);
+     }
+ }
+
+ @Override
+ public byte[] downloadChunk(String chunkId) throws RemoteException {
+     Path filePath = Paths.get(storageDirectory, chunkId);
+     try {
+         byte[] data = Files.readAllBytes(filePath);
+         System.out.println(serverId + ": Downloaded chunk " + chunkId + " (" + data.length + " bytes)");
+         return data;
+     } catch (IOException e) {
+         System.err.println(serverId + ": Error downloading chunk " + chunkId + ": " + e.getMessage());
+         // It's good practice to throw RemoteException for remote failures
+         throw new RemoteException("Failed to download chunk " + chunkId, e);
+     }
+ }
+}

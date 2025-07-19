@@ -1,0 +1,5 @@
+package myrmi;
+
+public interface MetadataService {
+
+}

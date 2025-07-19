@@ -1,0 +1,106 @@
+package myrmi;
+
+//Example: ClientApp.java
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+
+public class ClientApp {
+ private static final int CHUNK_SIZE = 1024 * 1024; // 1MB chunk size
+
+ public static void main(String[] args) {
+     try {
+         Registry registry = LocateRegistry.getRegistry("localhost", 1099); // Connect to RMI Registry
+         MetadataService metadataService = (MetadataService) registry.lookup("MetadataService");
+
+         System.out.println("Connected to Metadata Service.");
+
+         // --- Example Usage ---
+         // 1. List files
+         System.out.println("\n--- Listing Files ---");
+         List<String> files = metadataService.listAllFiles();
+         if (files.isEmpty()) {
+             System.out.println("No files available.");
+         } else {
+             files.forEach(System.out::println);
+         }
+
+         // 2. Upload a file
+         System.out.println("\n--- Uploading File ---");
+         File fileToUpload = new File("example_document.txt"); // Create a dummy file for testing
+         if (!fileToUpload.exists()) {
+             Files.write(fileToUpload.toPath(), "This is a test document for RMI file transfer. This content will be chunked and distributed across storage servers.".getBytes());
+         }
+
+         System.out.println("Uploading: " + fileToUpload.getName());
+         uploadFile(metadataService, registry, fileToUpload);
+
+         // 3. List files again to see the new one
+         System.out.println("\n--- Listing Files (After Upload) ---");
+         files = metadataService.listAllFiles();
+         files.forEach(System.out::println);
+
+         // 4. Download the file
+         System.out.println("\n--- Downloading File ---");
+         downloadFile(metadataService, registry, fileToUpload.getName(), "downloaded_" + fileToUpload.getName());
+
+     } catch (Exception e) {
+         System.err.println("Client exception: " + e.toString());
+         e.printStackTrace();
+     }
+ }
+
+ private static void uploadFile(MetadataService metadataService, Registry registry, File file) throws Exception {
+     Map<Integer, String> chunkLocations = new HashMap<>();
+     long fileSize = file.length();
+     int chunkIndex = 0;
+     
+     try (FileInputStream fis = new FileInputStream(file)) {
+         byte[] buffer = new byte[CHUNK_SIZE];
+         int bytesRead;
+         while ((bytesRead = fis.read(buffer)) != -1) {
+             byte[] chunkData = new byte[bytesRead];
+             System.arraycopy(buffer, 0, chunkData, 0, bytesRead);
+             
+             String storageServerId = metadataService.getAvailableStorageServer();
+             StorageService storageService = (StorageService) registry.lookup(storageServerId);
+             
+             String chunkId = file.getName() + "_chunk_" + chunkIndex;
+             storageService.uploadChunk(chunkId, chunkData);
+             chunkLocations.put(chunkIndex, storageServerId); // Store which server has this chunk
+             chunkIndex++;
+         }
+     }
+     metadataService.registerFile(file.getName(), fileSize, chunkLocations);
+     System.out.println("File '" + file.getName() + "' uploaded successfully.");
+ }
+
+ private static void downloadFile(MetadataService metadataService, Registry registry, String fileName, String outputFileName) throws Exception {
+     Map<Integer, String> chunkLocations = metadataService.getFileMetadata(fileName);
+     if (chunkLocations == null || chunkLocations.isEmpty()) {
+         System.out.println("File not found or no chunks registered: " + fileName);
+         return;
+     }
+
+     try (FileOutputStream fos = new FileOutputStream(outputFileName)) {
+         // Sort chunks by index to ensure correct reassembly
+         List<Integer> sortedChunkIndexes = new ArrayList<>(chunkLocations.keySet());
+         sortedChunkIndexes.sort(null); 
+
+         for (Integer chunkIndex : sortedChunkIndexes) {
+             String storageServerId = chunkLocations.get(chunkIndex);
+             StorageService storageService = (StorageService) registry.lookup(storageServerId); // Get specific storage server
+             
+             String chunkId = fileName + "_chunk_" + chunkIndex;
+             byte[] chunkData = storageService.downloadChunk(chunkId);
+             fos.write(chunkData);
+         }
+     }
+     System.out.println("File '" + fileName + "' downloaded to '" + outputFileName + "' successfully.");
+ }
+}

@@ -1,0 +1,21 @@
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.util.List;
+import java.util.Map;
+package myrmi;
+
+public interface MetadataService extends Remote {
+ // Registers a new file and its chunks with their locations
+ // fileMetadata: A map containing file details like name, size, and chunk locations
+ void registerFile(String fileName, long fileSize, Map<Integer, String> chunkLocations) throws RemoteException;
+
+ // Retrieves metadata for a specific file, including its chunk locations
+ // Returns a map where key is chunk index and value is the Storage Server ID
+ Map<Integer, String> getFileMetadata(String fileName) throws RemoteException;
+
+ // Lists all files currently managed by the platform
+ List<String> listAllFiles() throws RemoteException;
+
+ // (Optional) Get an available Storage Server ID for a new chunk upload
+ String getAvailableStorageServer() throws RemoteException;
+}

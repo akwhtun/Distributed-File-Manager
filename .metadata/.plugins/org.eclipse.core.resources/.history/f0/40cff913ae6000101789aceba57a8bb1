@@ -1,0 +1,15 @@
+package myrmi;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface StorageService extends Remote {
+ // Uploads a file chunk to this storage server
+ // chunkId: A unique identifier for the chunk (e.g., "filename_chunkIndex")
+ // chunkData: The actual byte array of the file chunk
+ void uploadChunk(String chunkId, byte[] chunkData) throws RemoteException;
+
+ // Downloads a file chunk from this storage server
+ // chunkId: The unique identifier of the chunk to download
+ // Returns the byte array of the file chunk
+ byte[] downloadChunk(String chunkId) throws RemoteException;
+}

@@ -1,0 +1,157 @@
+// MetadataServiceImpl.java
+package myrmi;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class MetadataServiceImpl extends UnicastRemoteObject implements MetadataService {
+
+    // Maps filename to a list of its chunk names
+    private Map<String, List<String>> fileToChunksMap;
+    // Maps chunk name to the list of storage servers that hold it
+    private Map<String, List<String>> chunkLocations;
+    // Maps storage server name to its RMI URL (host:port)
+    private Map<String, String> storageServers;
+
+    private AtomicInteger serverCounter = new AtomicInteger(0); // For round-robin assignment
+    private String METADATA_FILE = "metadata.dat"; // File for persistence
+
+    public MetadataServiceImpl() throws RemoteException {
+        super();
+        fileToChunksMap = new ConcurrentHashMap<>();
+        chunkLocations = new ConcurrentHashMap<>();
+        storageServers = new ConcurrentHashMap<>();
+        loadMetadata(); // Load saved metadata on startup
+    }
+
+    // --- NEW: Persistence Methods ---
+    private void saveMetadata() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(Paths.get(METADATA_FILE)))) {
+            oos.writeObject(fileToChunksMap);
+            System.out.println("Metadata saved to " + METADATA_FILE);
+        } catch (IOException e) {
+            System.err.println("Error saving metadata: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void loadMetadata() {
+        if (Files.exists(Paths.get(METADATA_FILE))) {
+            try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(Paths.get(METADATA_FILE)))) {
+                fileToChunksMap = (Map<String, List<String>>) ois.readObject();
+                System.out.println("Metadata loaded from " + METADATA_FILE);
+                // After loading, we need to rebuild chunkLocations based on what storage servers report
+                // This map will be populated by StorageServers calling registerChunk upon their startup.
+                chunkLocations.clear(); // Clear old locations as they'll be rebuilt
+            } catch (IOException | ClassNotFoundException e) {
+                System.err.println("Error loading metadata: " + e.getMessage());
+                // If loading fails, start with an empty map
+                fileToChunksMap = new ConcurrentHashMap<>();
+            }
+        } else {
+            System.out.println("No existing metadata file found. Starting fresh.");
+        }
+    }
+    // --- END NEW ---
+
+    @Override
+    public void registerStorageServer(String name, String host, int port) throws RemoteException {
+        String url = host + ":" + port;
+        storageServers.put(name, url);
+        System.out.println("Storage Server registered: " + name + " at " + url);
+        // When a server registers, it will then call registerChunk for its existing chunks
+    }
+
+    @Override
+    public String getNextChunkServer() throws RemoteException {
+        if (storageServers.isEmpty()) {
+            throw new RemoteException("No storage servers available.");
+        }
+        List<String> serverNames = new ArrayList<>(storageServers.keySet());
+        int index = serverCounter.getAndIncrement() % serverNames.size();
+        return serverNames.get(index);
+    }
+
+    @Override
+    public void fileUploaded(String fileName, long fileSize, List<String> chunkNames) throws RemoteException {
+        fileToChunksMap.put(fileName, chunkNames);
+        System.out.println("File uploaded: " + fileName + " with chunks: " + chunkNames);
+        saveMetadata(); // Save metadata after a new file is uploaded
+    }
+
+    @Override
+    public Map<String, List<String>> getFileChunks(String fileName) throws RemoteException {
+        if (!fileToChunksMap.containsKey(fileName)) {
+            System.out.println("Attempted to retrieve non-existent file: " + fileName);
+            return null;
+        }
+        
+        List<String> chunks = fileToChunksMap.get(fileName);
+        Map<String, List<String>> chunksWithLocations = new HashMap<>();
+
+        for (String chunk : chunks) {
+            List<String> locations = chunkLocations.get(chunk);
+            if (locations != null && !locations.isEmpty()) {
+                chunksWithLocations.put(chunk, new ArrayList<>(locations)); // Return a copy
+            } else {
+                System.err.println("Warning: Chunk " + chunk + " has no known locations.");
+                // Optionally handle this: e.g., remove from fileToChunksMap or mark as corrupted
+            }
+        }
+        return chunksWithLocations;
+    }
+
+    @Override
+    public List<String> listAvailableFiles() throws RemoteException {
+        return new ArrayList<>(fileToChunksMap.keySet());
+    }
+
+    @Override
+    public String getStorageServer(String fileName, long offset) throws RemoteException {
+        // This method needs rethinking for actual chunk mapping.
+        // For now, it just returns a random server, which is not how a real DFS works for specific chunks.
+        // The `getFileChunks` method is more appropriate for download.
+        if (storageServers.isEmpty()) {
+            return null;
+        }
+        List<String> serverNames = new ArrayList<>(storageServers.keySet());
+        Collections.shuffle(serverNames); // Return a random server
+        return serverNames.get(0);
+    }
+
+    @Override
+    public String getStorageServerForChunk(String chunkName) throws RemoteException {
+        List<String> servers = chunkLocations.get(chunkName);
+        if (servers == null || servers.isEmpty()) {
+            return null;
+        }
+        // In a real system, you'd choose based on load, proximity, etc.
+        // For simplicity, return the first one available.
+        return servers.get(0);
+    }
+
+    @Override
+    public void chunkStored(String chunkName, String storageServerName) throws RemoteException {
+        chunkLocations.computeIfAbsent(chunkName, k -> new ArrayList<>()).add(storageServerName);
+        System.out.println("Chunk " + chunkName + " acknowledged on " + storageServerName);
+        // No need to save metadata here, as `fileToChunksMap` (which is saved) is the primary source
+        // for file structure. `chunkLocations` is rebuilt from StorageServers.
+    }
+
+    // --- NEW: Register Chunk for Persistence Rebuilding ---
+    @Override
+    public void registerChunk(String chunkName, String storageServerName) throws RemoteException {
+        // Only add if not already present to avoid duplicates if a server registers twice
+        chunkLocations.computeIfAbsent(chunkName, k -> new ArrayList<>())
+                      .add(storageServerName);
+        System.out.println("Storage Server " + storageServerName + " registered chunk: " + chunkName);
+    }
+    // --- END NEW ---
+}

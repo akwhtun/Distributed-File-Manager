@@ -1,0 +1,28 @@
+package myrmi;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
+public class StorageServerMain {
+ public static void main(String[] args) {
+     if (args.length < 2) {
+         System.out.println("Usage: java StorageServerMain <serverId> <storageDirectory>");
+         return;
+     }
+     String serverId = args[0];
+     String storageDirectory = args[1]; // E.g., "chunks_server1"
+     
+     try {
+         StorageServiceImpl storageService = new StorageServiceImpl(serverId, storageDirectory);
+         
+         // It's common for storage servers to register themselves with the central Metadata service
+         // For simplicity here, we'll bind them directly to the registry using their ID
+         Registry registry = LocateRegistry.getRegistry(1099); // Get existing registry
+         registry.rebind(serverId, storageService); // Bind using its unique ID
+
+         System.out.println(serverId + " is Ready!");
+     } catch (Exception e) {
+         System.err.println(serverId + " exception: " + e.toString());
+         e.printStackTrace();
+     }
+ }
+}

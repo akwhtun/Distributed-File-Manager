@@ -1,0 +1,57 @@
+//MeatedataServieImpl.java
+package myrmi;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class MetadataServiceImpl extends UnicastRemoteObject implements MetadataService {
+ // Stores file metadata: Key = fileName, Value = Map<ChunkIndex, StorageServerId>
+ private Map<String, Map<Integer, String>> fileMetadataStore;
+ // (Optional) Simple list of registered storage servers for load balancing
+ private List<String> registeredStorageServers;
+ private int nextServerIndex = 0; // For round-robin load distribution
+
+ public MetadataServiceImpl() throws RemoteException {
+     super(); // Call constructor of UnicastRemoteObject
+     this.fileMetadataStore = new ConcurrentHashMap<>(); // Thread-safe map
+     this.registeredStorageServers = new ArrayList<>();
+     // In a real system, these would be discovered or configured
+     // For your project, you can hardcode some or add a registration method
+     registeredStorageServers.add("storageServer1"); // Example ID
+     registeredStorageServers.add("storageServer2"); // Example ID
+ }
+
+ @Override
+ public void registerFile(String fileName, long fileSize, Map<Integer, String> chunkLocations) throws RemoteException {
+     System.out.println("Registering file: " + fileName + " (Size: " + fileSize + " bytes)");
+     fileMetadataStore.put(fileName, chunkLocations);
+     System.out.println("Chunk locations: " + chunkLocations);
+ }
+
+ @Override
+ public Map<Integer, String> getFileMetadata(String fileName) throws RemoteException {
+     System.out.println("Retrieving metadata for: " + fileName);
+     return fileMetadataStore.get(fileName);
+ }
+
+ @Override
+ public List<String> listAllFiles() throws RemoteException {
+     System.out.println("Listing all files...");
+     return new ArrayList<>(fileMetadataStore.keySet());
+ }
+
+ @Override 
+ public String getAvailableStorageServer() throws RemoteException {
+     if (registeredStorageServers.isEmpty()) {
+         throw new RemoteException("No storage servers registered!");
+     }
+     String serverId = registeredStorageServers.get(nextServerIndex);
+     nextServerIndex = (nextServerIndex + 1) % registeredStorageServers.size(); // Round-robin
+     System.out.println("Providing available storage server: " + serverId);
+     return serverId;
+ }
+}

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+    <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_SYSTEM_CONSOLE_ENCODING" value="false"/>
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+        <listEntry value="/RMI/src/myrmi2/MetadataServerMain.java"/>
+    </listAttribute>
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+        <listEntry value="1"/>
+    </listAttribute>
+    <booleanAttribute key="org.eclipse.jdt.launching.ATTR_ATTR_USE_ARGFILE" value="false"/>
+    <booleanAttribute key="org.eclipse.jdt.launching.ATTR_EXCLUDE_TEST_CODE" value="true"/>
+    <booleanAttribute key="org.eclipse.jdt.launching.ATTR_SHOW_CODEDETAILS_IN_EXCEPTION_MESSAGES" value="true"/>
+    <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_CLASSPATH_ONLY_JAR" value="false"/>
+    <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="myrmi2.MetadataServerMain"/>
+    <stringAttribute key="org.eclipse.jdt.launching.MODULE_NAME" value="RMI"/>
+    <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="RMI"/>
+    <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="--add-exports myrmi/myrmi=java.rmi&#10;--add-opens java.base/java.lang=ALL-UNNAMED&#10;--add-opens java.base/java.lang.reflect=ALL-UNNAMED&#10;--add-opens java.base/java.io=ALL-UNNAMED&#10;--add-opens java.base/java.net=ALL-UNNAMED&#10;--add-opens java.base/java.util=ALL-UNNAMED&#10;--add-opens java.base/sun.nio.ch=ALL-UNNAMED&#10;--add-opens java.rmi/sun.rmi.server=ALL-UNNAMED&#10;--add-opens java.rmi/sun.rmi.registry=ALL-UNNAMED&#10;--add-opens java.rmi/java.rmi.server=ALL-UNNAMED"/>
+</launchConfiguration>
