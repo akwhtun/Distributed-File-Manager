@@ -8,7 +8,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
-import java.util.Vector; // Consider using ArrayList unless explicit thread-safety on shared list is needed
+import java.util.Vector; 
 
 public class ClientUI extends JFrame {
 
@@ -49,8 +49,8 @@ public class ClientUI extends JFrame {
         // Settings for Grid View
         fileList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
         fileList.setVisibleRowCount(-1);
-        fileList.setFixedCellWidth(150); // Adjust as needed for your icon/text size
-        fileList.setFixedCellHeight(80); // Adjust as needed for your icon/text size
+        fileList.setFixedCellWidth(150); 
+        fileList.setFixedCellHeight(80); 
 
         fileList.setCellRenderer(new FileListCellRenderer()); // Custom Renderer
 
@@ -389,8 +389,7 @@ public class ClientUI extends JFrame {
                 label.setPreferredSize(new Dimension(fileList.getFixedCellWidth(), fileList.getFixedCellHeight()));
                 
                 label.setHorizontalAlignment(SwingConstants.CENTER);
-                label.setVerticalAlignment(SwingConstants.CENTER); // Centered vertically within the fixed height cell
-                
+                label.setVerticalAlignment(SwingConstants.CENTER);                
                 label.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Add padding
                 // --- END MODIFIED ---
             }
