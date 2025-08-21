@@ -14,7 +14,7 @@ public class StorageServerMain {
 
         String serverName = args[0];
         String dataDirectory = args[1];
-        String metadataHost = "172.16.3.44"; 
+        String metadataHost = "localhost"; 
         int metadataPort = 1099;
 
         try {
@@ -33,7 +33,7 @@ public class StorageServerMain {
             MetadataService metadataService = (MetadataService) Naming.lookup("rmi://" + metadataHost + ":" + metadataPort + "/MetadataService");
             
             // Register with Metadata Service
-            metadataService.registerStorageServer(serverName, "172.16.3.44", metadataPort); 
+            metadataService.registerStorageServer(serverName, "localhost", metadataPort); 
             
           
             System.out.println("Scanning data directory '" + dataDirectory + "' for existing chunks...");

@@ -55,7 +55,7 @@ public class ClientUI extends JFrame {
         fileList.setCellRenderer(new FileListCellRenderer()); // Custom Renderer
 
         uploadButton = new JButton("Upload File");
-        downloadButton = new JButton("Download Selected");
+        downloadButton = new JButton("Download");
         refreshButton = new JButton("Refresh List");
         browseDownloadPathButton = new JButton("Browse");
 
@@ -325,7 +325,7 @@ public class ClientUI extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            ClientUI frame = new ClientUI("172.16.3.44", 1099);
+            ClientUI frame = new ClientUI("localhost", 1099);
             frame.setVisible(true);
         });
     }
@@ -346,7 +346,7 @@ public class ClientUI extends JFrame {
                 audioIcon = new ImageIcon(getClass().getResource("/icons/file_audio.png"));
                 videoIcon = new ImageIcon(getClass().getResource("/icons/file_video.png"));
             } catch (Exception e) {
-                System.err.println("Error loading custom icons: " + e.getMessage() + ". Falling back to generic icons.");
+//                System.err.println("Error loading custom icons: " + e.getMessage() + ". Falling back to generic icons.");
                 // Fallback to generic system icons if custom ones are not found
                 defaultIcon = UIManager.getIcon("FileView.fileIcon");
                 documentIcon = UIManager.getIcon("FileView.textIcon");
